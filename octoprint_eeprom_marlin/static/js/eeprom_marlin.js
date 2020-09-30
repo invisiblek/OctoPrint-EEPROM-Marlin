@@ -20,7 +20,7 @@ $(function() {
             self.eepromM203RegEx = /M203 ([X])(.*)[^0-9]([Y])(.*)[^0-9]([Z])(.*)[^0-9]([E])(.*)/;
             self.eepromM201RegEx = /M201 ([X])(.*)[^0-9]([Y])(.*)[^0-9]([Z])(.*)[^0-9]([E])(.*)/;
             self.eepromM206RegEx = /M206 ([X])(.*)[^0-9]([Y])(.*)[^0-9]([Z])(.*)/;
-            self.eepromM851RegEx = /M851 ([Z])(.*)/;
+            self.eepromM851RegEx = /M851 ([X])(.*)[^0-9]([Y])(.*)[^0-9]([Z])(.*)/;
             self.eepromM200RegEx = /M200 ([D])(.*)/;
             self.eepromM666RegEx = /M666 ([X])(.*)[^0-9]([Y])(.*)[^0-9]([Z])(.*)/;
             self.eepromM304RegEx = /M304 ([P])(.*)[^0-9]([I])(.*)[^0-9]([D])(.*)/;
@@ -93,6 +93,7 @@ $(function() {
         self.eepromDataPID = ko.observableArray([]);
         self.eepromDataPIDB = ko.observableArray([]);
         self.eepromDataHoming = ko.observableArray([]);
+        self.eepromDataProbe = ko.observableArray([]);
         self.eepromDataMaterialHS0 = ko.observableArray([]);
         self.eepromDataMaterialHS1 = ko.observableArray([]);
         self.eepromDataMaterialHS2 = ko.observableArray([]);
@@ -244,14 +245,32 @@ $(function() {
                 });
             }
 
-            // M851 Z-Probe Offset
+            // M851 Probe offset
             match = self.eepromM851RegEx.exec(line);
             if (match) {
-                self.eepromData1.push({
-                    dataType: 'M851 Z',
-                    label: 'Z-Probe Offset',
+                self.eepromDataProbe.push({
+                    dataType: 'M851 X',
+                    label: 'X probe',
                     origValue: ((restoreBackup) ? '' : match[2]),
                     value: match[2],
+                    unit: 'mm',
+                    description: ''
+                });
+
+                self.eepromDataProbe.push({
+                    dataType: 'M851 Y',
+                    label: 'Y probe',
+                    origValue: ((restoreBackup) ? '' : match[4]),
+                    value: match[4],
+                    unit: 'mm',
+                    description: ''
+                });
+
+                self.eepromDataProbe.push({
+                    dataType: 'M851 Z',
+                    label: 'Z probe',
+                    origValue: ((restoreBackup) ? '' : match[6]),
+                    value: match[6],
                     unit: 'mm',
                     description: ''
                 });
@@ -1390,6 +1409,9 @@ $(function() {
         self.eepromDataHomingCount = ko.computed(function() {
             return self.eepromDataHoming().length > 0;
         });
+        self.eepromDataProbeCount = ko.computed(function() {
+            return self.eepromDataProbe().length > 0;
+        });
 
         self.eepromDataMaterialCount = ko.computed(function() {
             return (self.eepromDataMaterialHS0().length + self.eepromDataMaterialHS1().length + self.eepromDataMaterialHS2().length) > 0;
@@ -1438,6 +1460,7 @@ $(function() {
             self.eepromDataPID([]);
             self.eepromDataPIDB([]);
             self.eepromDataHoming([]);
+            self.eepromDataProbe([]);
             self.eepromDataMaterialHS0([]);
             self.eepromDataMaterialHS1([]);
             self.eepromDataMaterialHS2([]);
@@ -1507,6 +1530,7 @@ $(function() {
                         self.eepromDataPID([]);
                         self.eepromDataPIDB([]);
                         self.eepromDataHoming([]);
+                        self.eepromDataProbe([]);
                         self.eepromDataMaterialHS0([]);
                         self.eepromDataMaterialHS1([]);
                         self.eepromDataMaterialHS2([]);
@@ -1553,6 +1577,7 @@ $(function() {
             self.eepromDataPID([]);
             self.eepromDataPIDB([]);
             self.eepromDataHoming([]);
+            self.eepromDataProbe([]);
             self.eepromDataMaterialHS0([]);
             self.eepromDataMaterialHS1([]);
             self.eepromDataMaterialHS2([]);
@@ -1646,6 +1671,14 @@ $(function() {
             });
 
             eepromData = self.eepromDataHoming();
+            _.each(eepromData, function(data) {
+                if (data.origValue != data.value) {
+                    self._requestSaveDataToEeprom(data.dataType, data.value);
+                    data.origValue = data.value;
+                }
+            });
+
+            eepromData = self.eepromDataProbe();
             _.each(eepromData, function(data) {
                 if (data.origValue != data.value) {
                     self._requestSaveDataToEeprom(data.dataType, data.value);
